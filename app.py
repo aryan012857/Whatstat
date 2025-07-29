@@ -11,12 +11,21 @@ if uploaded_file is not None:
     try:
         data = bytes_data.decode("utf-8")
     except UnicodeDecodeError:
-        data = bytes_data.decode("ISO-8859-1")  # or "utf-16"
+        data = bytes_data.decode("ISO-8859-1")  # fallback encoding
+
     df = preprocessor.preprocess(data)
 
     # fetch the unique users
     user_list = df['user'].unique().tolist()
-    user_list.remove('group_notification')
+
+    # Safely remove system messages
+    system_users = ['group_notification', 'Changed group subject', 
+                    'Messages to this group are now secured with end-to-end encryption']
+
+    for sys_user in system_users:
+        if sys_user in user_list:
+            user_list.remove(sys_user)
+
     user_list.sort()
     user_list.insert(0, "Overall")
 
@@ -31,7 +40,7 @@ if uploaded_file is not None:
 
         with col1:
             st.markdown("### 💬 Total Messages")
-            st.title( num_msg)
+            st.title(num_msg)
 
         with col2:
             st.markdown("### 📝 Total Words")
@@ -52,15 +61,15 @@ if uploaded_file is not None:
             st.markdown("📆 **Monthly Analysis**")
             timeline = helper.monthly_timeline(selected_user, df)
             fig, ax = plt.subplots()
-            plt.plot(timeline['time'], timeline['message'])
-            plt.xticks(rotation= 'vertical')
+            ax.plot(timeline['time'], timeline['message'])
+            plt.xticks(rotation='vertical')
             st.pyplot(fig)
 
         with col2:
             st.markdown("📅 **Daily Analysis**")
             daily_time = helper.daily_timeline(selected_user, df)
             fig, ax = plt.subplots()
-            plt.plot(daily_time['dates'], daily_time['message'])
+            ax.plot(daily_time['dates'], daily_time['message'])
             plt.xticks(rotation='vertical')
             st.pyplot(fig)
 
@@ -92,8 +101,8 @@ if uploaded_file is not None:
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("🏆 **Top 5 Most Active Users**")
-                ax.bar(x.index, x.values, color = 'red')
-                plt.xticks(rotation= 'vertical')
+                ax.bar(x.index, x.values, color='red')
+                plt.xticks(rotation='vertical')
                 st.pyplot(fig)
 
             with col2:
@@ -125,7 +134,7 @@ if uploaded_file is not None:
         with col1:
             st.markdown("😀 **Top 5 Emojis Used**")
             fig, ax = plt.subplots()
-            ax.pie(emoji_df['Count'].head(), labels= emoji_df['Emojis'].head(), autopct='%.0f%%')
+            ax.pie(emoji_df['Count'].head(), labels=emoji_df['Emojis'].head(), autopct='%.0f%%')
             st.pyplot(fig)
 
         with col2:
