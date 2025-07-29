@@ -11,15 +11,15 @@ if uploaded_file is not None:
     try:
         data = bytes_data.decode("utf-8")
     except UnicodeDecodeError:
-        data = bytes_data.decode("ISO-8859-1")  # fallback encoding
+        data = bytes_data.decode("ISO-8859-1")
 
     df = preprocessor.preprocess(data)
 
     # fetch the unique users
     user_list = df['user'].unique().tolist()
 
-    # Safely remove system messages
-    system_users = ['group_notification', 'Changed group subject', 
+    # Safely remove system-generated usernames
+    system_users = ['group_notification', 'Changed group subject',
                     'Messages to this group are now secured with end-to-end encryption']
 
     for sys_user in system_users:
@@ -110,21 +110,29 @@ if uploaded_file is not None:
                 st.dataframe(new_df)
 
         # Most common words
-        most_common_df = helper.most_common_words(selected_user, df)
         st.title("🔤 Most Common Words")
-        fig, ax = plt.subplots()
+        most_common_df = helper.most_common_words(selected_user, df)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("🗣️ **Top 20 Most Used Words**")
-            most_common_df.columns = ['Words', 'Count']
-            ax.barh(most_common_df['Words'], most_common_df['Count'])
-            plt.xticks(rotation='vertical')
-            st.pyplot(fig)
+        if most_common_df.empty:
+            st.info("No common words found for the selected user.")
+        else:
+            if most_common_df.shape[1] == 2:
+                most_common_df.columns = ['Words', 'Count']
+            else:
+                st.warning("Could not rename columns in most_common_words. Check helper function.")
 
-        with col2:
-            st.markdown("📄 **Words Dataset**")
-            st.dataframe(most_common_df)
+            fig, ax = plt.subplots()
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("🗣️ **Top 20 Most Used Words**")
+                ax.barh(most_common_df['Words'], most_common_df['Count'])
+                plt.xticks(rotation='vertical')
+                st.pyplot(fig)
+
+            with col2:
+                st.markdown("📄 **Words Dataset**")
+                st.dataframe(most_common_df)
 
         # Emoji analysis
         emoji_df = helper.emoji_helper(selected_user, df)
